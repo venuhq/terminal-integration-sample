@@ -24,6 +24,7 @@ import kotlin.concurrent.thread
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import kotlinx.coroutines.withTimeout
 
 class VenuClient(private val activity: ComponentActivity) {
     private val TAG = "VenuClient"
@@ -91,6 +92,8 @@ class VenuClient(private val activity: ComponentActivity) {
         private var serviceConnection: ServiceConnection? = null
         private var currentDeferred: CompletableDeferred<String>? = null
         private var connectionDeferred: CompletableDeferred<Boolean>? = null
+        private val REQUEST_TIMEOUT_MS = 30000L // 30 seconds
+        private var isConnecting = false
 
         fun connect(activity: ComponentActivity) {
             serviceConnection = createServiceConnection()
@@ -142,11 +145,21 @@ class VenuClient(private val activity: ComponentActivity) {
         }
 
         suspend fun ensureConnected() {
-            if (serverMessenger == null) {
-                connect(activity)
-                connectionDeferred?.await()
+        if (serverMessenger == null) {
+            synchronized(this) {
+                if (!isConnecting) {
+                    isConnecting = true
+                    connect(activity)
+                }
+            }
+
+            try {
+                connectionDeferred?.await() ?: throw IllegalStateException("Connection failed")
+            } finally {
+                isConnecting = false
             }
         }
+    }
 
         suspend fun sendRequest(requestStr: String, type: VenuMessage): String {
             if (currentDeferred != null) {
@@ -171,7 +184,14 @@ class VenuClient(private val activity: ComponentActivity) {
             }
 
             return withContext(Dispatchers.IO) {
-                deferred.await()
+                try {
+                    withTimeout(REQUEST_TIMEOUT_MS) {
+                        deferred.await()
+                    }
+                } catch (e: Exception) {
+                    currentDeferred = null
+                    throw IOException("Request timed out or failed", e)
+                }
             }
         }
 

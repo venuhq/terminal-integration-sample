@@ -112,9 +112,7 @@ fun VenuMockUI(venuClient: VenuClient) {
             onClick = {
                 scope.launch {
                     try {
-                        val response = venuClient.initialise(
-                            VenuInitialiseRequest(mapOf("id" to "mock-terminal"))
-                        )
+                        venuClient.initialise(VenuInitialiseRequest(mapOf("id" to "mock-terminal")))
                         snackbarHostState.showSnackbar("Initialised")
                     } catch (e: Exception) {
                         snackbarHostState.showSnackbar("Error: ${e.message}")
