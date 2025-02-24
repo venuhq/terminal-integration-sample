@@ -61,8 +61,8 @@ class VenuClient(private val activity: ComponentActivity) {
         }
     }
 
-    suspend fun initialise(request: VenuInitialiseRequest): VenuResponse {
-        return callServerWithFallback(request, VenuMessage.REQUEST_INITIALISE)
+    suspend fun initialise(request: VenuInitialiseRequest) {
+        callServerWithFallback(request, VenuMessage.REQUEST_INITIALISE)
     }
 
     private suspend inline fun <reified T>callServerWithFallback(request: T, type: VenuMessage): VenuResponse {
