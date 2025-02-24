@@ -24,8 +24,10 @@ Establishes a connection to the Venu service. Should be called when your activit
 Disconnects from the Venu service. Should be called when your activity is destroyed.
 
 #### suspend fun initialise(request: VenuInitialiseRequest)
-Initialises the Venu service and links the terminal with the Venu backend. In the `metadata` field
-of the request, provide any information to help identify the terminal—terminal ID, merchant ID, location etc.
+Initialises the Venu service and links the terminal with the Venu backend. This should be called when
+the payment application initialises.
+
+In the `metadata` field of the request, provide any information to help identify the terminal—terminal ID, merchant ID, location etc.
 
 #### suspend fun cardPresented(request: VenuCardRequest): VenuCardPresentedResult
 Call this method when the payment card has been presented. It will return the discount to apply to the transaction (if any).
