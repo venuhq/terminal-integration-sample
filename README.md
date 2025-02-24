@@ -2,7 +2,7 @@
 
 This sample app shows how to integrate your payment application with the Venu terminal SDK.
 
-![Screenshot of the sample app](screenshot.png | width=200px)
+![Screenshot of the sample app](screenshot.png)
 
 ## Setup
 
