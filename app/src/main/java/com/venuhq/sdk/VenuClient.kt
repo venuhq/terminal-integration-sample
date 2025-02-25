@@ -42,7 +42,7 @@ class VenuClient(private val activity: ComponentActivity) {
     private val defaultResponse = VenuResponse(action = Action.NONE, intent = null)
 
     init {
-        activityResultHandler.setup(activity, json)
+        activityResultHandler.setup(activity)
     }
 
     suspend fun cardPresented(request: VenuCardRequest): VenuCardPresentedResult {
@@ -84,7 +84,6 @@ class VenuClient(private val activity: ComponentActivity) {
         return json.decodeFromString<U>(responseStr)
     }
 
-    fun connect() = serviceManager.connect(activity)
     fun disconnect() = serviceManager.disconnect(activity)
 
     private inner class ServiceManager {
@@ -100,7 +99,11 @@ class VenuClient(private val activity: ComponentActivity) {
             val intent = Intent("com.venuhq.terminal.SERVICE").apply {
                 `package` = "com.venuhq.terminal"
             }
-            activity.applicationContext.bindService(intent, serviceConnection!!, Context.BIND_AUTO_CREATE)
+            val bound = activity.applicationContext.bindService(intent, serviceConnection!!, Context.BIND_AUTO_CREATE)
+            if (!bound) {
+                throw IllegalStateException("Failed to bind to Venu service")
+            }
+
             connectionDeferred = CompletableDeferred()
         }
 
@@ -149,7 +152,14 @@ class VenuClient(private val activity: ComponentActivity) {
             synchronized(this) {
                 if (!isConnecting) {
                     isConnecting = true
-                    connect(activity)
+
+                    try {
+                        connect(activity)
+                    } catch (e: Exception) {
+                        isConnecting = false
+                        throw e
+                    }
+
                 }
             }
 
@@ -207,7 +217,7 @@ class VenuClient(private val activity: ComponentActivity) {
         private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
         private var jsonDeferred: CompletableDeferred<String?>? = null
 
-        fun setup(activity: ComponentActivity, json: Json) {
+        fun setup(activity: ComponentActivity) {
             activityResultLauncher = activity.registerForActivityResult(
                 ActivityResultContracts.StartActivityForResult()
             ) { result ->

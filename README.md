@@ -17,9 +17,6 @@ This sample app shows how to integrate your payment application with the Venu te
 
 VenuClient provides the interface between the payment application and the Venu terminal application.
 
-#### connect()
-Establishes a connection to the Venu service. Should be called when your activity starts.
-
 #### disconnect()
 Disconnects from the Venu service. Should be called when your activity is destroyed.
 

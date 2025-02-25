@@ -27,7 +27,6 @@ class MainActivity : ComponentActivity() {
         setToFullScreen()
 
         venuClient = VenuClient(this)
-        venuClient.connect()
 
         setContent {
             MyApplicationTheme {
