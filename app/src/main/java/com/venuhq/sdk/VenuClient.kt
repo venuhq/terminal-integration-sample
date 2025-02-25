@@ -28,6 +28,7 @@ import kotlinx.coroutines.withTimeout
 
 class VenuClient(private val activity: ComponentActivity) {
     private val TAG = "VenuClient"
+    private val REQUEST_TIMEOUT_MS = 45000L // 45 seconds
 
     @OptIn(ExperimentalSerializationApi::class)
     private val json = Json {
@@ -58,7 +59,7 @@ class VenuClient(private val activity: ComponentActivity) {
         val response = callServerWithFallback(request, VenuMessage.REQUEST_TRANSACTION_ACCEPTED)
 
         if (response.action == Action.LAUNCH_INTENT && response.intent != null) {
-            activityResultHandler.launchIntent(response.intent)
+            activityResultHandler.handleTransactionAccepted(response.intent)
         }
     }
 
@@ -92,7 +93,6 @@ class VenuClient(private val activity: ComponentActivity) {
         private var serviceConnection: ServiceConnection? = null
         private var currentDeferred: CompletableDeferred<String>? = null
         private var connectionDeferred: CompletableDeferred<Boolean>? = null
-        private val REQUEST_TIMEOUT_MS = 30000L // 30 seconds
         private var isConnecting = false
 
         fun connect(activity: ComponentActivity) {
@@ -154,7 +154,9 @@ class VenuClient(private val activity: ComponentActivity) {
             }
 
             try {
-                connectionDeferred?.await() ?: throw IllegalStateException("Connection failed")
+                withTimeout(REQUEST_TIMEOUT_MS) {
+                    connectionDeferred?.await() ?: throw IllegalStateException("Connection failed")
+                }
             } finally {
                 isConnecting = false
             }
@@ -203,47 +205,53 @@ class VenuClient(private val activity: ComponentActivity) {
 
     private inner class ActivityResultHandler {
         private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
-        private var cardPresentedDeferred: CompletableDeferred<VenuCardPresentedResult>? = null
+        private var jsonDeferred: CompletableDeferred<String?>? = null
 
         fun setup(activity: ComponentActivity, json: Json) {
             activityResultLauncher = activity.registerForActivityResult(
                 ActivityResultContracts.StartActivityForResult()
             ) { result ->
-                handleActivityResult(result, json)
+                handleActivityResult(result)
             }
         }
 
         private fun handleActivityResult(
-            result: androidx.activity.result.ActivityResult,
-            json: Json
+            result: androidx.activity.result.ActivityResult
         ) {
             val resultJson = result.data?.getStringExtra("json")
-            if (resultJson != null) {
-                Log.d(TAG, "Activity result received: $resultJson")
-                try {
-                    val cardResult = json.decodeFromString<VenuCardPresentedResult>(resultJson)
-                    cardPresentedDeferred?.complete(cardResult)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to parse card presented result", e)
-                    cardPresentedDeferred?.completeExceptionally(e)
-                }
-                cardPresentedDeferred = null
-            } else {
-                cardPresentedDeferred?.complete(VenuCardPresentedResult(discountAmount = null))
-            }
+            Log.d(TAG, "Activity result received: $resultJson")
+            jsonDeferred?.complete(resultJson)
+            jsonDeferred = null
         }
 
         suspend fun handleCardPresented(intent: String): VenuCardPresentedResult {
-            cardPresentedDeferred = CompletableDeferred()
+            val resultJson = launchIntent(intent)
+            if (resultJson == null) {
+                return VenuCardPresentedResult(discountAmount = null)
+            }
+
+            return try {
+                json.decodeFromString<VenuCardPresentedResult>(resultJson)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to parse card presented result", e)
+                VenuCardPresentedResult(discountAmount = null)
+            }
+        }
+        
+        suspend fun handleTransactionAccepted(intent: String) {
             launchIntent(intent)
-            return cardPresentedDeferred?.await() ?: throw IllegalStateException("No result received")
         }
 
-        fun launchIntent(intent: String) {
+        private suspend fun launchIntent(intent: String): String? {
+            jsonDeferred = CompletableDeferred()
             val i = Intent(intent).apply {
                 flags = Intent.FLAG_ACTIVITY_NO_ANIMATION
             }
             activityResultLauncher.launch(i)
+
+            return withTimeout(REQUEST_TIMEOUT_MS) {
+                jsonDeferred?.await()
+            }
         }
     }
 }
