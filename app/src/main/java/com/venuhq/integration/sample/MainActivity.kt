@@ -74,7 +74,10 @@ fun VenuMockUI(venuClient: VenuClient) {
         CardOption("Card 4", "token4", "601100", "0004")
     )
     
+    val amounts = listOf("5", "10", "15")
+    
     var selectedCard by remember { mutableStateOf(cards[0]) }
+    var selectedAmount by remember { mutableStateOf(amounts[0]) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -82,7 +85,7 @@ fun VenuMockUI(venuClient: VenuClient) {
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
             text = "Select Card:",
@@ -105,7 +108,34 @@ fun VenuMockUI(venuClient: VenuClient) {
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = "Select Amount:",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            amounts.forEach { amount ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = selectedAmount == amount,
+                        onClick = { selectedAmount = amount }
+                    )
+                    Text(
+                        text = "$$amount",
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         Button(
             onClick = {
@@ -134,7 +164,7 @@ fun VenuMockUI(venuClient: VenuClient) {
                                 last4 = selectedCard.last4
                             ),
                             amount = Amount(
-                                total = "15",
+                                total = selectedAmount,
                                 cashout = null,
                                 surcharge = null,
                                 gratuity = null
@@ -166,7 +196,7 @@ fun VenuMockUI(venuClient: VenuClient) {
                                 last4 = selectedCard.last4
                             ),
                             amount = Amount(
-                                total = "15",
+                                total = selectedAmount,
                                 cashout = null,
                                 surcharge = null,
                                 gratuity = null
