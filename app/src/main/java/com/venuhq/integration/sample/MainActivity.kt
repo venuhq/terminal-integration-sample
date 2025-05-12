@@ -74,7 +74,7 @@ fun VenuMockUI(venuClient: VenuClient) {
         CardOption("Card 4", "token4", "601100", "0004")
     )
     
-    val amounts = listOf("5", "10", "15")
+    val amounts = listOf("10", "40", "123")
     
     var selectedCard by remember { mutableStateOf(cards[0]) }
     var selectedAmount by remember { mutableStateOf(amounts[0]) }
@@ -161,7 +161,8 @@ fun VenuMockUI(venuClient: VenuClient) {
                             card = Card(
                                 token = selectedCard.token,
                                 bin = selectedCard.bin,
-                                last4 = selectedCard.last4
+                                last4 = selectedCard.last4,
+                                presentationMethod = PresentationMethod.ContactlessCard
                             ),
                             amount = Amount(
                                 total = selectedAmount,
@@ -193,7 +194,8 @@ fun VenuMockUI(venuClient: VenuClient) {
                             card = Card(
                                 token = selectedCard.token,
                                 bin = selectedCard.bin,
-                                last4 = selectedCard.last4
+                                last4 = selectedCard.last4,
+                                presentationMethod = PresentationMethod.ContactlessCard
                             ),
                             amount = Amount(
                                 total = selectedAmount,

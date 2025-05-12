@@ -237,14 +237,14 @@ class VenuClient(private val activity: ComponentActivity) {
         suspend fun handleCardPresented(intent: String): VenuCardPresentedResult {
             val resultJson = launchIntent(intent)
             if (resultJson == null) {
-                return VenuCardPresentedResult(discountAmount = null)
+                return VenuCardPresentedResult(discountAmount = "0.00")
             }
 
             return try {
                 json.decodeFromString<VenuCardPresentedResult>(resultJson)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to parse card presented result", e)
-                VenuCardPresentedResult(discountAmount = null)
+                VenuCardPresentedResult(discountAmount = "0.00")
             }
         }
         
